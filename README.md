@@ -1,4 +1,6 @@
 # renova
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/underthefoxtree/renova/go-build.yml?branch=main)
+
 re-no-va, from the latin word renovare, meaning "renew!" (to another person).
 
 A simple and fast utility that updates your entire system, written in go.

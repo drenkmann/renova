@@ -1,7 +1,9 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -9,6 +11,7 @@ import (
 
 	"github.com/briandowns/spinner"
 	"github.com/fatih/color"
+	"github.com/urfave/cli/v2"
 )
 
 type manager struct {
@@ -56,7 +59,7 @@ func UpdateSpinner(s *spinner.Spinner, suffix string) {
 	s.Suffix = fmt.Sprintf("%s %s", color.MagentaString("]"), suffix)
 }
 
-func main() {
+func UpdateAll() error {
 	var failed []manager
 	var succeeded []manager
 	var found []manager
@@ -69,8 +72,7 @@ func main() {
 	s.Stop()
 
 	if os.Geteuid() != 0 {
-		fmt.Printf("%s Updating requires elevated privilages! Please rerun the program with sudo.\n", warn)
-		os.Exit(1)
+		return cli.Exit(fmt.Sprintf("%s Updating requires elevated privilages! Please rerun the program with sudo.\n", warn), 1)
 	}
 
 	color.Set(color.Bold)
@@ -127,5 +129,84 @@ func main() {
 		for _, m := range failed {
 			fmt.Printf("    - %s\n", color.RedString(m.name))
 		}
+	}
+
+	return nil
+}
+
+func install() error {
+	filepath, err := os.Executable()
+	if err != nil {
+		return err
+	}
+
+	_, err = exec.Command(os.Getenv("SHELL"), "-c", fmt.Sprintf("sudo cp %s /usr/local/bin", filepath)).CombinedOutput()
+	return err
+}
+
+func uninstall() error {
+	filepath := "/usr/local/bin/renova"
+
+	if os.Geteuid() != 0 {
+		if _, err := os.Stat("/usr/local/bin/renova"); err == nil {
+			return cli.Exit(fmt.Sprintf("%s renova is still installed under /usr/local/bin. Please remove that installation first using sudo renova uninstall", fail), 1)
+		} else if errors.Is(err, os.ErrNotExist) {
+			filepath, err := os.Executable()
+			if err != nil {
+				return err
+			}
+
+			_, err = exec.Command(os.Getenv("SHELL"), "-c", fmt.Sprintf("rm %s", filepath)).CombinedOutput()
+
+			return err
+		}
+	}
+
+	if _, err := os.Stat("/usr/local/bin/renova"); err != nil {
+		fmt.Printf("%s No install of renova was found under /usr/local/bin.", fail)
+		return err
+	}
+
+	_, err := exec.Command(os.Getenv("SHELL"), "-c", fmt.Sprintf("rm %s", filepath)).CombinedOutput()
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("%s Successfully removed renova from /usr/local/bin. To complete uninstall, run renova uninstall now.\n", success)
+
+	return nil
+}
+
+func main() {
+	app := &cli.App{
+		Name:    "renova",
+		Usage:   "Update all your packages",
+		Version: "v1.0.0",
+		Suggest: true,
+		Action: func(ctx *cli.Context) error {
+			return UpdateAll()
+		},
+		Commands: []*cli.Command{
+			{
+				Name:    "install",
+				Usage:   "Install renova",
+				Aliases: []string{"setup"},
+				Action: func(ctx *cli.Context) error {
+					return install()
+				},
+			},
+			{
+				Name:    "uninstall",
+				Usage:   "Uninstall renova",
+				Aliases: []string{"remove"},
+				Action: func(ctx *cli.Context) error {
+					return uninstall()
+				},
+			},
+		},
+	}
+
+	if err := app.Run(os.Args); err != nil {
+		log.Fatal(err)
 	}
 }

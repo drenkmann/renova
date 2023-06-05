@@ -189,7 +189,7 @@ func uninstall() error {
 		return err
 	}
 
-	fmt.Printf("%s Successfully removed renova from /usr/local/bin. To complete uninstall, run renova uninstall now.\n", success)
+	fmt.Printf("%s Successfully removed renova from /usr/local/bin. To completely uninstall, run renova uninstall now.\n", success)
 
 	return nil
 }

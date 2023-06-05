@@ -191,10 +191,11 @@ func uninstall() error {
 
 func main() {
 	app := &cli.App{
-		Name:    "renova",
-		Usage:   "Update all your packages",
-		Version: "v1.1.0",
-		Suggest: true,
+		Name:        "renova",
+		Usage:       "Update all your packages",
+		Description: "renova updates packages for the current user. To update global packages, run \"sudo renova\", to update local packages, run \"renova\".",
+		Version:     "v1.1.0",
+		Suggest:     true,
 		Action: func(ctx *cli.Context) error {
 			return UpdateAll()
 		},

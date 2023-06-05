@@ -153,6 +153,11 @@ func install() error {
 	}
 
 	_, err = exec.Command(os.Getenv("SHELL"), "-c", fmt.Sprintf("sudo cp %s /usr/local/bin", filepath)).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("%s Failed to install renova: %s", fail, err)
+	}
+
+	fmt.Printf("%s Successfully installed renova under /usr/local/bin.", success)
 	return err
 }
 

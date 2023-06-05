@@ -19,7 +19,8 @@ sudo renova install
 
 ## Usage
 ```bash
-sudo renova
+# Update both globally and locally
+sudo renova && renova
 ```
 
 ## Uninstall

@@ -153,6 +153,11 @@ func install() error {
 	}
 
 	_, err = exec.Command(os.Getenv("SHELL"), "-c", fmt.Sprintf("sudo cp %s /usr/local/bin", filepath)).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("%s Failed to install renova: %s", fail, err)
+	}
+
+	fmt.Printf("%s Successfully installed renova under /usr/local/bin.", success)
 	return err
 }
 
@@ -184,7 +189,7 @@ func uninstall() error {
 		return err
 	}
 
-	fmt.Printf("%s Successfully removed renova from /usr/local/bin. To complete uninstall, run renova uninstall now.\n", success)
+	fmt.Printf("%s Successfully removed renova from /usr/local/bin. To completely uninstall, run renova uninstall now.\n", success)
 
 	return nil
 }
@@ -194,7 +199,7 @@ func main() {
 		Name:        "renova",
 		Usage:       "Update all your packages",
 		Description: "renova updates packages for the current user. To update global packages, run \"sudo renova\", to update local packages, run \"renova\".",
-		Version:     "v1.1.0",
+		Version:     "v1.1.1",
 		Suggest:     true,
 		Action: func(ctx *cli.Context) error {
 			return UpdateAll()

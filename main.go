@@ -17,6 +17,7 @@ import (
 type manager struct {
 	name    string
 	command string
+	local   bool
 }
 
 var managers = []manager{
@@ -48,11 +49,15 @@ var managers = []manager{
 		name:    "pip",
 		command: "python -m pip install --upgrade pip",
 	},
+	{
+		name:    "rustup",
+		command: "rustup update",
+		local:   true,
+	},
 }
 
 var fail = color.RedString("[\uf00d]")
 var success = color.GreenString("[\uf00c]")
-var warn = color.YellowString("[!]")
 var hint = color.BlackString("[?]")
 
 func UpdateSpinner(s *spinner.Spinner, suffix string) {
@@ -68,40 +73,47 @@ func UpdateAll() error {
 	s.Prefix = color.MagentaString("[")
 	s.Suffix = fmt.Sprintf("%s Loading...", color.MagentaString("]"))
 	s.Start()
-
 	s.Stop()
 
-	if os.Geteuid() != 0 {
-		return cli.Exit(fmt.Sprintf("%s Updating requires elevated privilages! Please rerun the program with sudo.\n", warn), 1)
-	}
+	local := os.Geteuid() != 0
 
 	color.Set(color.Bold)
-	fmt.Printf("\n[?] Discovering managers.\n\n")
+	if local {
+		fmt.Printf("\n[?] Discovering local managers.\n\n")
+	} else {
+		fmt.Printf("\n[?] Discovering managers.\n\n")
+	}
 	color.Unset()
 
 	for _, m := range managers {
-		UpdateSpinner(s, fmt.Sprintf("Checking if %s is installed...", m.name))
-		s.Restart()
+		if local == m.local {
+			UpdateSpinner(s, fmt.Sprintf("Checking if %s is installed...", m.name))
+			s.Restart()
 
-		out, err := exec.Command("which", m.name).Output()
+			out, err := exec.Command("which", m.name).Output()
 
-		s.Stop()
-		if err != nil {
-			fmt.Printf("%s %s\n", hint, color.BlackString(fmt.Sprintf("%s was not found.", m.name)))
-		} else {
-			fmt.Printf("%s %s was found at %s.\n", success, m.name, strings.TrimSpace(string(out)))
-			found = append(found, m)
+			s.Stop()
+			if err != nil {
+				fmt.Printf("%s %s\n", hint, color.BlackString(fmt.Sprintf("%s was not found.", m.name)))
+			} else {
+				fmt.Printf("%s %s was found at %s.\n", success, m.name, strings.TrimSpace(string(out)))
+				found = append(found, m)
+			}
 		}
 	}
 
 	fmt.Printf("\n%s", success)
 	color.Set(color.Bold)
-	fmt.Printf(" Found %d managers.\n[?] Updating.\n\n", len(found))
+	if local {
+		fmt.Printf(" Found %d local managers.\n[?] Updating locally.\n\n", len(found))
+	} else {
+		fmt.Printf(" Found %d managers.\n[?] Updating.\n\n", len(found))
+	}
 	color.Unset()
 
 	shell := os.Getenv("SHELL")
 	for _, m := range found {
-		UpdateSpinner(s, fmt.Sprintf("Updating using %s (%s)", m.name, m.command))
+		UpdateSpinner(s, fmt.Sprintf("Updating using %s (%s)...", m.name, m.command))
 		s.Restart()
 
 		out, err := exec.Command(shell, "-c", m.command).CombinedOutput()
@@ -181,7 +193,7 @@ func main() {
 	app := &cli.App{
 		Name:    "renova",
 		Usage:   "Update all your packages",
-		Version: "v1.0.0",
+		Version: "v1.1.0",
 		Suggest: true,
 		Action: func(ctx *cli.Context) error {
 			return UpdateAll()

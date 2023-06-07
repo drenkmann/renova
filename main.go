@@ -154,10 +154,11 @@ func install() error {
 
 	_, err = exec.Command(os.Getenv("SHELL"), "-c", fmt.Sprintf("sudo cp %s /usr/local/bin", filepath)).CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("%s Failed to install renova: %s", fail, err)
+		fmt.Printf("\n%s Failed to install renova:", fail)
+		return err
 	}
 
-	fmt.Printf("%s Successfully installed renova under /usr/local/bin.", success)
+	fmt.Printf("\n%s Successfully installed renova under /usr/local/bin.\n", success)
 	return err
 }
 
@@ -166,7 +167,7 @@ func uninstall() error {
 
 	if os.Geteuid() != 0 {
 		if _, err := os.Stat("/usr/local/bin/renova"); err == nil {
-			return cli.Exit(fmt.Sprintf("%s renova is still installed under /usr/local/bin. Please remove that installation first using sudo renova uninstall", fail), 1)
+			return cli.Exit(fmt.Sprintf("\n%s renova is still installed under /usr/local/bin. Please remove that installation first using sudo renova uninstall.", fail), 1)
 		} else if errors.Is(err, os.ErrNotExist) {
 			filepath, err := os.Executable()
 			if err != nil {
@@ -175,12 +176,17 @@ func uninstall() error {
 
 			_, err = exec.Command(os.Getenv("SHELL"), "-c", fmt.Sprintf("rm %s", filepath)).CombinedOutput()
 
-			return err
+			if err != nil {
+				return err
+			}
+
+			fmt.Printf("\n%s Successfully removed renova.\n", success)
+			return nil
 		}
 	}
 
 	if _, err := os.Stat("/usr/local/bin/renova"); err != nil {
-		fmt.Printf("%s No install of renova was found under /usr/local/bin.", fail)
+		fmt.Printf("\n%s No install of renova was found under /usr/local/bin.\n", fail)
 		return err
 	}
 
@@ -189,7 +195,7 @@ func uninstall() error {
 		return err
 	}
 
-	fmt.Printf("%s Successfully removed renova from /usr/local/bin. To completely uninstall, run renova uninstall now.\n", success)
+	fmt.Printf("\n%s Successfully removed renova from /usr/local/bin. To completely uninstall, run renova uninstall now.\n", success)
 
 	return nil
 }
@@ -199,9 +205,13 @@ func main() {
 		Name:        "renova",
 		Usage:       "Update all your packages",
 		Description: "renova updates packages for the current user. To update global packages, run \"sudo renova\", to update local packages, run \"renova\".",
-		Version:     "v1.1.1",
+		Version:     "v1.1.2",
 		Suggest:     true,
 		Action: func(ctx *cli.Context) error {
+			if ctx.Args().Len() > 0 {
+				return cli.Exit(fmt.Sprintf("\n%s Command \"%s\" was not found.", fail, ctx.Args().First()), 1)
+			}
+
 			return UpdateAll()
 		},
 		Commands: []*cli.Command{

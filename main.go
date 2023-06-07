@@ -199,9 +199,14 @@ func main() {
 		Name:        "renova",
 		Usage:       "Update all your packages",
 		Description: "renova updates packages for the current user. To update global packages, run \"sudo renova\", to update local packages, run \"renova\".",
-		Version:     "v1.1.1",
+		Version:     "v1.1.2",
 		Suggest:     true,
 		Action: func(ctx *cli.Context) error {
+			if ctx.Args().Len() > 0 {
+				fmt.Printf("\n%s Command \"%s\" was not found.\n", fail, ctx.Args().First())
+				os.Exit(1)
+			}
+
 			return UpdateAll()
 		},
 		Commands: []*cli.Command{
